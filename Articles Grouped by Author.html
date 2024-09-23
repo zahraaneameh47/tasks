@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Author Article Count</title>
+    <style>
+         body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #chartdiv {
+  width: 100%;
+  height: 500px;
+}
+    h1{
+    text-align: center;
+
+    }
+    </style>
+</head>
+<body>
+<h1> Articles Grouped by Author</h1>
+<!-- Styles -->
+
+
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Chart code -->
+<script>
+am5.ready(function() {
+
+  // Create root element
+  var root = am5.Root.new("chartdiv");
+
+  // Set themes
+  root.setThemes([am5themes_Animated.new(root)]);
+
+  // Create chart
+  var chart = root.container.children.push(am5xy.XYChart.new(root, {
+    panX: false,
+    panY: false,
+    wheelX: "panX",
+    wheelY: "zoomX",
+    layout: root.verticalLayout
+  }));
+
+  // Add legend
+  var legend = chart.children.push(
+    am5.Legend.new(root, {
+      centerX: am5.p50,
+      x: am5.p50
+    })
+  );
+
+  // Define a list of colors
+  var colors = am5.ColorSet.new(root, {
+    step: 2
+  });
+
+  // Fetch data from API
+  fetch('http://127.0.0.1:5000/articles_grouped_by_author')
+    .then(response => response.json())
+    .then(data => {
+      // Limit to only 20 data points
+      let limitedData = data.slice(0, 20);
+
+      // Prepare data for the chart
+      let chartData = limitedData.map(item => {
+        return {
+          category: item._id,
+          count: item.count
+        };
+      });
+
+      // Create axes
+      var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+        categoryField: "category",
+        renderer: am5xy.AxisRendererX.new(root, {
+          cellStartLocation: 0.1,
+          cellEndLocation: 0.9,
+          minGridDistance: 10
+        }),
+        tooltip: am5.Tooltip.new(root, {})
+      }));
+
+      xAxis.get("renderer").labels.template.setAll({
+        rotation: -45,
+        centerY: am5.p50,
+        centerX: am5.p50
+      });
+
+      xAxis.get("renderer").grid.template.set("forceHidden", true);
+      xAxis.data.setAll(chartData);
+
+      var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+        renderer: am5xy.AxisRendererY.new(root, {})
+      }));
+
+      // Add series
+      var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+        name: "Article Count",
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueYField: "count",
+        categoryXField: "category",
+        tooltipText: "{categoryX}: {valueY}"
+      }));
+
+      series.columns.template.setAll({
+        tooltipY: 0,
+        width: am5.percent(90),
+        strokeOpacity: 0
+      });
+
+      // Apply different colors to each column
+      series.columns.template.adapters.add("fill", function(fill, target) {
+        return colors.getIndex(series.columns.indexOf(target));
+      });
+
+      series.data.setAll(chartData);
+      series.appear();
+      legend.data.push(series);
+
+      // Animate chart
+      chart.appear(1000, 100);
+    })
+    .catch(error => console.error('Error fetching data:', error));
+}); // end am5.ready()
+</script>
+
+<!-- HTML -->
+<div id="chartdiv"></div>
+</body>
+</html>

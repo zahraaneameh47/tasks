@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Article By Word Count</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        #chartdiv {
+            width: 100%;
+            height: 500px;
+            max-width: 800px;
+            margin: 0 auto;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            border-radius: 10px;
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Article Word Count Distribution</h1>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Chart code -->
+<script>
+am5.ready(function() {
+
+// Create root element
+var root = am5.Root.new("chartdiv");
+
+// Set themes
+root.setThemes([
+  am5themes_Animated.new(root)
+]);
+
+// Create chart
+var chart = root.container.children.push(am5xy.XYChart.new(root, {
+  panX: true,
+  panY: true,
+  wheelX: "panX",
+  wheelY: "zoomX",
+  pinchZoomX: true,
+  paddingLeft: 0,
+  paddingRight: 15,
+  paddingBottom: 30,
+  layout: root.verticalLayout
+}));
+
+chart.set("colors", am5.ColorSet.new(root, {
+  colors: [
+    am5.color(0x73556E),
+    am5.color(0x9FA1A6),
+    am5.color(0xF2AA6B),
+    am5.color(0xF28F6B),
+    am5.color(0xA95A52),
+    am5.color(0xE35B5D),
+    am5.color(0xFFA446)
+  ]
+}));
+
+// Add chart title
+var title = chart.children.unshift(am5.Label.new(root, {
+
+  fontSize: 20,
+  fontWeight: "500",
+  textAlign: "center",
+  x: am5.p50,
+  centerX: am5.p50,
+  marginBottom: 15
+}));
+
+// Create axes
+var xRenderer = am5xy.AxisRendererX.new(root, {
+  minGridDistance: 50,
+  minorGridEnabled: true
+});
+
+xRenderer.grid.template.setAll({
+  location: 1
+});
+
+var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+  maxDeviation: 0.3,
+  categoryField: "wordCount",
+  renderer: xRenderer,
+  tooltip: am5.Tooltip.new(root, {})
+}));
+
+var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+  maxDeviation: 0.3,
+  min: 0,
+  renderer: am5xy.AxisRendererY.new(root, {
+    strokeOpacity: 0.1
+  })
+}));
+
+// Create series
+var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+  name: "Series 1",
+  xAxis: xAxis,
+  yAxis: yAxis,
+  valueYField: "count",
+  categoryXField: "wordCount",
+  tooltip: am5.Tooltip.new(root, {
+    labelText: "{valueY}"
+  }),
+}));
+
+series.columns.template.setAll({
+  tooltipY: 0,
+  tooltipText: "{categoryX}: {valueY}",
+  shadowOpacity: 0.1,
+  shadowOffsetX: 2,
+  shadowOffsetY: 2,
+  shadowBlur: 1,
+  strokeWidth: 2,
+  stroke: am5.color(0xffffff),
+  shadowColor: am5.color(0x000000),
+  cornerRadiusTL: 10,
+  cornerRadiusTR: 10,
+  fillGradient: am5.LinearGradient.new(root, {
+    stops: [
+      {}, // will use original column color
+      { color: am5.color(0x000000) }
+    ]
+  }),
+  fillPattern: am5.GrainPattern.new(root, {
+    maxOpacity: 0.15,
+    density: 0.5,
+    colors: [am5.color(0x000000), am5.color(0x000000), am5.color(0xffffff)]
+  })
+});
+
+series.columns.template.states.create("hover", {
+  shadowOpacity: 1,
+  shadowBlur: 10,
+  cornerRadiusTL: 5,
+  cornerRadiusTR: 5
+});
+
+series.columns.template.adapters.add("fill", function (fill, target) {
+  return chart.get("colors").getIndex(series.columns.indexOf(target));
+});
+
+// Fetch data from the API and set it
+fetch('http://127.0.0.1:5000/articles_by_word_count')
+  .then(response => response.json())
+  .then(data => {
+    var chartData = data.map(item => ({
+      wordCount: item._id, // Use _id as category label
+      count: item.count
+    }));
+
+    xAxis.data.setAll(chartData);
+    series.data.setAll(chartData);
+  })
+  .catch(error => console.error('Error fetching data:', error));
+
+// Make stuff animate on load
+series.appear(1000);
+chart.appear(1000, 100);
+
+}); // end am5.ready()
+</script>
+
+<!-- HTML -->
+<div id="chartdiv"></div>
+</body>
+</html>

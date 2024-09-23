@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stacked Bar Chart</title>
+
+    <!-- Styles -->
+    <style>
+        #chartdiv {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+
+    <!-- Resources -->
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+</head>
+<body>
+    <!-- HTML -->
+    <div id="chartdiv"></div>
+
+    <!-- Chart code -->
+    <script>
+    am5.ready(function() {
+
+        // Create root element
+        var root = am5.Root.new("chartdiv");
+
+        // Set themes
+        root.setThemes([
+            am5themes_Animated.new(root)
+        ]);
+
+        // Create chart
+        var chart = root.container.children.push(am5xy.XYChart.new(root, {
+            panX: false,
+            panY: false,
+            wheelX: "panX",
+            wheelY: "zoomX",
+            paddingLeft: 0,
+            layout: root.verticalLayout
+        }));
+
+        // Add scrollbar
+        chart.set("scrollbarX", am5.Scrollbar.new(root, {
+            orientation: "horizontal"
+        }));
+
+        // Create axes
+        var xRenderer = am5xy.AxisRendererX.new(root, {
+            minorGridEnabled: true
+        });
+        var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+            categoryField: "category",
+            renderer: xRenderer,
+            tooltip: am5.Tooltip.new(root, {})
+        }));
+
+        xRenderer.grid.template.setAll({
+            location: 1
+        });
+
+        var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+            min: 0,
+            renderer: am5xy.AxisRendererY.new(root, {
+                strokeOpacity: 0.1
+            })
+        }));
+
+        // Add legend
+        var legend = chart.children.push(am5.Legend.new(root, {
+            centerX: am5.p50,
+            x: am5.p50
+        }));
+
+        // Add series
+        function makeSeries(name, fieldName) {
+            var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+                name: name,
+                stacked: true,
+                xAxis: xAxis,
+                yAxis: yAxis,
+                valueYField: fieldName,
+                categoryXField: "category"
+            }));
+
+            series.columns.template.setAll({
+                tooltipText: "{name}, {categoryX}: {valueY}",
+                tooltipY: am5.percent(10)
+            });
+
+            series.bullets.push(function () {
+                return am5.Bullet.new(root, {
+                    sprite: am5.Label.new(root, {
+                        text: "{valueY}",
+                        fill: root.interfaceColors.get("alternativeText"),
+                        centerY: am5.p50,
+                        centerX: am5.p50,
+                        populateText: true
+                    })
+                });
+            });
+
+            legend.data.push(series);
+        }
+
+        // Fetch data from API
+        // Adjusted Transformation Logic
+fetch('http://127.0.0.1:5000/articles_by_classes')
+    .then(response => response.json())
+    .then(data => {
+        let transformedData = {};
+
+        // Group data by years and coverage
+        data.forEach(item => {
+            let year = item._id.key; // assuming 'key' field is your class/year
+            let coverage = item._id.value;
+            if (!transformedData[year]) {
+                transformedData[year] = { category: year }; // Year as category
+            }
+            transformedData[year][item._id.mapping] = item.count;
+        });
+
+        let formattedData = Object.values(transformedData);
+
+        // Set xAxis data
+        xAxis.data.setAll(formattedData);
+
+        // Create series dynamically for coverage
+        let mappings = new Set(data.map(item => item._id.mapping));
+        mappings.forEach(mapping => makeSeries(mapping.charAt(0).toUpperCase() + mapping.slice(1), mapping));
+    })
+    .catch(error => console.error('Error fetching data:', error));
+
+    </script>
+</body>
+</html>

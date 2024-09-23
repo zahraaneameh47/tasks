@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles Visualization</title>
+    <style>
+        #chartdiv {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Articles with Specific Keyword Count Visualization</h1>
+    <div id="chartdiv"></div>
+
+    <!-- Resources -->
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+    <!-- Chart code -->
+    <script>
+        am5.ready(function() {
+            // Create root element
+            var root = am5.Root.new("chartdiv");
+
+            // Create custom theme
+            var myTheme = am5.Theme.new(root);
+            myTheme.rule("Label").set("fontSize", "0.8em");
+
+            // Set themes
+            root.setThemes([am5themes_Animated.new(root), myTheme]);
+
+            // Create pie chart
+            var chart = root.container.children.push(am5percent.PieChart.new(root, {
+                innerRadius: am5.percent(40),
+                tooltip: am5.Tooltip.new(root, {})
+            }));
+
+            // Create series
+            var series = chart.series.push(am5percent.PieSeries.new(root, {
+                valueField: "value",
+                categoryField: "category",
+                alignLabels: false
+            }));
+
+            series.labels.template.setAll({
+                textType: "circular",
+                templateField: "dummyLabelSettings"
+            });
+
+            series.ticks.template.set("forceHidden", true);
+
+            var sliceTemplate = series.slices.template;
+            sliceTemplate.setAll({
+                draggable: true,
+                cornerRadius: 5
+            });
+
+            // Data
+            async function fetchData() {
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/articles_with_specific_keyword_count/3');
+                    const data = await response.json();
+
+                    // Process data for pie chart
+                    const wordCounts = data.map(article => parseInt(article.word_count, 10));
+
+                    // Create bins for pie chart
+                    const binSize = 100; // Adjust bin size as needed
+                    const maxWordCount = Math.max(...wordCounts);
+                    const bins = Math.ceil(maxWordCount / binSize);
+
+                    // Initialize bin counts
+                    const binCounts = new Array(bins).fill(0);
+
+                    // Fill bin counts
+                    wordCounts.forEach(count => {
+                        const binIndex = Math.floor(count / binSize);
+                        binCounts[binIndex]++;
+                    });
+
+                    // Prepare labels and colors
+                    const labels = [];
+                    const fixedColors = [
+                        am5.color(0x4bc0c0), // Teal
+                        am5.color(0xff9f40), // Orange
+                        am5.color(0x9966ff)  // Purple
+                    ];
+                    const backgroundColors = binCounts.map((_, index) =>
+                        fixedColors[index % fixedColors.length]
+                    );
+
+                    for (let i = 0; i < bins; i++) {
+                        labels.push(`${i * binSize}-${(i + 1) * binSize - 1}`);
+                    }
+
+                    // Set data to series
+                    series.data.setAll(binCounts.map((count, index) => ({
+                        category: labels[index],
+                        value: count,
+                        settings: {
+                            fill: backgroundColors[index],
+                            stroke: backgroundColors[index],
+                            fillOpacity: 0.6
+                        }
+                    })));
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                }
+            }
+
+            fetchData();
+
+            // Reveal container
+            root.container.appear(1000, 100);
+        });
+    </script>
+</body>
+</html>

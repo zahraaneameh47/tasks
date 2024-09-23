@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Articles Updated After Publication</title>
+    <style>
+        #chartdiv {
+            width: 100%;
+            height: 500px;
+        }
+          h1 {
+            color: #333;
+            font-size: 24px;
+        }
+         body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+    </style>
+    <!-- Resources -->
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+</head>
+<body>
+    <h1>Articles Updated After Publication </h1>
+    <!-- Chart code -->
+    <script>
+    am5.ready(function() {
+        // Create root element
+        var root = am5.Root.new("chartdiv");
+
+        // Set themes
+        root.setThemes([am5themes_Animated.new(root)]);
+
+        // Create chart
+        var chart = root.container.children.push(am5xy.XYChart.new(root, {
+            panX: true,
+            panY: true,
+            wheelX: "none",
+            wheelY: "none",
+            paddingLeft: 0
+        }));
+
+        // Create axes
+        var yRenderer = am5xy.AxisRendererY.new(root, {
+            minGridDistance: 20,
+            inversed: true,
+            minorGridEnabled: true
+        });
+        yRenderer.grid.template.set("visible", false);
+
+        var yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
+            maxDeviation: 0,
+            categoryField: "category",
+            renderer: yRenderer
+        }));
+
+        var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+            maxDeviation: 0,
+            min: 0,
+            strictMinMax: true,
+            extraMax: 0.1,
+            renderer: am5xy.AxisRendererX.new(root, {})
+        }));
+
+        // Add series
+        var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+            xAxis: xAxis,
+            yAxis: yAxis,
+            valueXField: "value",
+            categoryYField: "category"
+        }));
+
+        series.columns.template.setAll({ cornerRadiusBR: 5, cornerRadiusTR: 5 });
+
+        series.columns.template.adapters.add("fill", function (fill, target) {
+            return chart.get("colors").getIndex(series.columns.indexOf(target));
+        });
+
+        series.columns.template.adapters.add("stroke", function (stroke, target) {
+            return chart.get("colors").getIndex(series.columns.indexOf(target));
+        });
+
+        series.bullets.push(function () {
+            return am5.Bullet.new(root, {
+                locationX: 1,
+                sprite: am5.Label.new(root, {
+                    text: "{valueXWorking.formatNumber('#.#')}",
+                    fill: root.interfaceColors.get("alternativeText"),
+                    centerX: am5.p100,
+                    centerY: am5.p50,
+                    populateText: true
+                })
+            });
+        });
+
+        // Fetch data from API
+        fetch('http://127.0.0.1:5000/articles_updated_after_publication')
+            .then(response => response.json())
+            .then(data => {
+                // Transform data to count updates (assuming each item is an update)
+                let counts = {};
+                data.forEach(item => {
+                    let category = item.description.substring(0, 20); // Use actual category field if available
+                    if (!counts[category]) {
+                        counts[category] = 0;
+                    }
+                    counts[category]++;
+                });
+
+                // Convert counts to array of objects
+                let transformedData = Object.keys(counts).map(category => ({
+                    category: category,
+                    value: counts[category]
+                })).slice(0, 20); // Limit to top 20 items
+
+                // Add data to series
+                series.data.setAll(transformedData);
+                yAxis.data.setAll(transformedData);
+            })
+            .catch(error => console.error('Error fetching data:', error));
+
+        // Make stuff animate on load
+        series.appear(1000);
+        chart.appear(1000, 100);
+    }); // end am5.ready()
+    </script>
+    <!-- HTML -->
+    <div id="chartdiv"></div>
+</body>
+</html>

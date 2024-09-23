@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chart with API Data and Combo Box</title>
+</head>
+<body>
+<!-- Styles -->
+<style>
+#chartdiv {
+  width: 100%;
+  max-width: 100%;
+  height: 550px;
+}
+
+#keywordSelect {
+  margin-bottom: 20px;
+}
+</style>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/hierarchy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<!-- Chart code -->
+<script>
+am5.ready(function() {
+
+    // Create root element
+    var root = am5.Root.new("chartdiv");
+
+    // Set themes
+    root.setThemes([
+        am5themes_Animated.new(root)
+    ]);
+
+    // Create wrapper container
+    var container = root.container.children.push(am5.Container.new(root, {
+        width: am5.percent(100),
+        height: am5.percent(100),
+        layout: root.verticalLayout
+    }));
+
+    // Create series
+    var series = container.children.push(am5hierarchy.ForceDirected.new(root, {
+        singleBranchOnly: false,
+        downDepth: 2,
+        topDepth: 1,
+        initialDepth: 1,
+        valueField: "value",
+        categoryField: "name",
+        childDataField: "children",
+        idField: "name",
+        linkWithField: "linkWith",
+        manyBodyStrength: -10,
+        centerStrength: 0.8
+    }));
+
+    series.get("colors").setAll({
+        step: 2
+    });
+
+    series.links.template.set("strength", 0.5);
+
+    // Fetch data from API
+    let apiData = []; // To store the fetched API data
+    fetch('http://127.0.0.1:5000/articles_by_keyword/%D9%84%D8%A8%D9%86%D8%A7%D9%86')
+        .then(response => response.json())
+        .then(data => {
+            apiData = data; // Store the data for future use
+            populateComboBox(data); // Populate the combo box with keywords
+
+            // Process the data for the initial load
+            const processedData = processData(data, null);
+
+            // Update the chart with processed data
+            series.data.setAll([processedData]);
+
+            // Set the first data item as selected
+            series.set("selectedDataItem", series.dataItems[0]);
+
+            // Make stuff animate on load
+            series.appear(1000, 100);
+        })
+        .catch(error => console.error('Error fetching data:', error));
+
+    // Function to process API data into the chart format
+    function processData(data, selectedKeyword) {
+        return {
+            value: 0,
+            children: data.map(item => ({
+                name: item.title,
+                value: item.keywords.length, // Example value
+                children: item.keywords
+                    .filter(keyword => !selectedKeyword || keyword === selectedKeyword)
+                    .map(keyword => ({
+                        name: keyword,
+                        value: 1
+                    }))
+            }))
+        };
+    }
+
+    // Populate the combo box with keywords
+    function populateComboBox(data) {
+        const select = document.getElementById('keywordSelect');
+        const allKeywords = [...new Set(data.flatMap(item => item.keywords))]; // Get unique keywords
+        allKeywords.forEach(keyword => {
+            const option = document.createElement('option');
+            option.value = keyword;
+            option.text = keyword;
+            select.add(option);
+        });
+
+        // Add an "All" option
+        const allOption = document.createElement('option');
+        allOption.value = '';
+        allOption.text = 'All Keywords';
+        select.add(allOption, 0);
+
+        // Handle change event
+        select.addEventListener('change', function() {
+            const selectedKeyword = this.value;
+            const processedData = processData(apiData, selectedKeyword);
+            series.data.setAll([processedData]);
+        });
+    }
+
+}); // end am5.ready()
+</script>
+
+<!-- HTML -->
+<select id="keywordSelect">
+    <option value="">Loading...</option>
+</select>
+<div id="chartdiv"></div>
+</body>
+</html>
