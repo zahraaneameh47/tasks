@@ -1,0 +1,141 @@
+<html>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Styles -->
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #chartdiv {
+      width: 100%;
+      max-width: 800px; /* You can adjust this value */
+      height: 500px;
+      margin-bottom: 20px;
+    }
+
+    #legenddiv {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+  </style>
+
+  <!-- Resources -->
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+  <!-- Chart code -->
+  <script>
+    am5.ready(function () {
+      // Create root element
+      var root = am5.Root.new("chartdiv");
+
+      // Set themes
+      root.setThemes([am5themes_Animated.new(root)]);
+
+      // Create chart
+      var chart = root.container.children.push(
+        am5percent.PieChart.new(root, {
+          layout: root.verticalLayout,
+        })
+      );
+
+      // Create series
+      var series = chart.series.push(
+        am5percent.PieSeries.new(root, {
+          valueField: "length",
+          categoryField: "title",
+          tooltip: am5.Tooltip.new(root, {
+            labelText: "{category}: {value} words",
+          }),
+        })
+      );
+
+      // Generate random lengths for each article
+      function getRandomLength(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      // Simulated data with real titles
+      var data = [
+        {
+          title:
+            'حزب الله يستهدف مرابض "الزاعورة".. ويوقع ضباط الاحتلال وجنوده بين قتيل ‌‏وجريح',
+          length: getRandomLength(500, 1500),
+        },
+        {
+          title:
+            "إيهود باراك: \"إسرائيل\" أقرب إلى الهزيمة من النصر.. والحرب مع حزب الله خطأ استراتيجي",
+          length: getRandomLength(500, 1500),
+        },
+        {
+          title:
+            "الجزائر: فتح صناديق الاقتراع أمام أكثر من 24 مليون ناخب لاختيار رئيس للجمهورية",
+          length: getRandomLength(500, 1500),
+        },
+        {
+          title: "لجزائر: تمديد الاقتراع في الانتخابات الرئاسية ساعة إضافية",
+          length: getRandomLength(500, 1500),
+        },
+        {
+          title:
+            'أبو عبيدة مباركاً عملية معبر الكرامة: مسدس البطل الأردني أكثر فاعلية من جيوش جرارة',
+          length: getRandomLength(500, 1500),
+        },
+        {
+          title:
+            "لمسائية | عملية معبر الكرامة.. أي أثمان تتراكم على \"إسرائيل\"؟",
+          length: getRandomLength(500, 1500),
+        },
+        {
+          title:
+            'بحماية أميركية.. "قسد" تنقل عناصر "داعش" من سجن الرقة إلى الحسكة شرقي سوريا',
+          length: getRandomLength(500, 1500),
+        },
+        {
+          title:
+            'بحماية أميركية.. "قسد" تنقل عناصر "داعش" من سجن الرقة إلى الحسكة شرقي سوريا',
+          length: getRandomLength(500, 1500),
+        },
+        {
+          title:
+            "سوريا: شهداء وإصابات نتيجة عدوان إسرائيلي استهدف مصياف.. والدفاعات الجوية تتصدى",
+          length: getRandomLength(500, 1500),
+        },
+        {
+          title:
+            'اللواء سلامي: كابوس الانتقام يهز "إسرائيل".. ردنا سيكون بطريقة مختلفة',
+          length: getRandomLength(500, 1500),
+        },
+      ];
+
+      // Set the data for the series
+      series.data.setAll(data);
+
+      // Add legend
+      var legend = root.container.children.push(
+        am5.Legend.new(root, {
+          centerX: am5.p50,
+          x: am5.p50,
+          y: am5.p100,
+        })
+      );
+
+      legend.data.setAll(series.dataItems);
+
+      // Animate chart and series
+      series.appear(1000, 100);
+    }); // end am5.ready()
+  </script>
+
+  <!-- HTML -->
+  <div id="chartdiv"></div>
+  <div id="legenddiv"></div>
+</html>

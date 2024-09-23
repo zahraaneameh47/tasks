@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recent Articles</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 80%;
+            margin: auto;
+            border-collapse: collapse;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Recent Articles</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Keywords</th>
+                <th>Publication Date</th>
+                <th>URL</th>
+            </tr>
+        </thead>
+        <tbody id="articleTableBody">
+            <!-- Data will be inserted here by JavaScript -->
+        </tbody>
+    </table>
+
+    <script>
+        // Fetch data from the API
+        fetch('http://127.0.0.1:5000/recent_articles')
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById('articleTableBody');
+
+                // Loop through each article and create table rows
+                data.forEach(article => {
+                    const row = document.createElement('tr');
+
+                    // Create a cell for the title
+                    const titleCell = document.createElement('td');
+                    titleCell.textContent = article.title;
+                    row.appendChild(titleCell);
+
+                    // Create a cell for the keywords
+                    const keywordsCell = document.createElement('td');
+                    keywordsCell.textContent = article.keywords.join(', ');
+                    row.appendChild(keywordsCell);
+
+                    // Create a cell for the publication date
+                    const dateCell = document.createElement('td');
+                    const publishedDate = new Date(article.published_time).toLocaleString();
+                    dateCell.textContent = publishedDate;
+                    row.appendChild(dateCell);
+
+                    // Create a cell for the URL
+                    const urlCell = document.createElement('td');
+                    const urlLink = document.createElement('a');
+                    urlLink.href = article.url;
+                    urlLink.textContent = 'Read Article';
+                    urlLink.target = "_blank"; // Open link in a new tab
+                    urlCell.appendChild(urlLink);
+                    row.appendChild(urlCell);
+
+                    // Append the row to the table body
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => console.error('Error fetching articles:', error));
+    </script>
+
+</body>
+</html>
